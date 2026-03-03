@@ -1,6 +1,8 @@
 package com.dragonclient.skins.mixin;
 
 import com.dragonclient.skins.DragonSkinsClient;
+import com.mojang.authlib.minecraft.MinecraftProfileTexture;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.texture.PlayerSkinProvider;
 import net.minecraft.client.util.DefaultSkinHelper;
 import net.minecraft.util.Identifier;
@@ -24,21 +26,47 @@ public class PlayerSkinProviderMixin {
         if (username != null) {
             String skinUrl = DragonSkinsClient.getSkinUrl(username);
             
-            // Check if custom skin exists
+            // Check if custom skin exists and load it
             CompletableFuture<Identifier> future = CompletableFuture.supplyAsync(() -> {
                 try {
                     URL url = new URL(skinUrl);
                     HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-                    conn.setConnectTimeout(1000);
-                    conn.setReadTimeout(1000);
+                    conn.setConnectTimeout(2000);
+                    conn.setReadTimeout(2000);
                     
                     if (conn.getResponseCode() == 200) {
-                        DragonSkinsClient.LOGGER.info("Loading custom skin for: " + username);
-                        // Load the custom skin texture
-                        return loadTextureFromUrl(skinUrl);
+                        DragonSkinsClient.LOGGER.info("Loading custom skin for: " + username + " from " + skinUrl);
+                        
+                        // Create identifier for this skin
+                        Identifier skinId = new Identifier("dragonskins", "skins/" + username.toLowerCase());
+                        
+                        // Load the texture from URL
+                        MinecraftClient client = MinecraftClient.getInstance();
+                        client.execute(() -> {
+                            try {
+                                // Register the skin texture from URL
+                                client.getTextureManager().registerTexture(
+                                    skinId,
+                                    new net.minecraft.client.texture.PlayerSkinTexture(
+                                        null,
+                                        skinUrl,
+                                        DefaultSkinHelper.getTexture(uuid),
+                                        true,
+                                        null
+                                    )
+                                );
+                                DragonSkinsClient.LOGGER.info("✓ Custom skin loaded: " + username);
+                            } catch (Exception e) {
+                                DragonSkinsClient.LOGGER.error("Failed to register skin texture: " + e.getMessage());
+                            }
+                        });
+                        
+                        return skinId;
+                    } else {
+                        DragonSkinsClient.LOGGER.debug("No custom skin found for " + username + " (HTTP " + conn.getResponseCode() + ")");
                     }
                 } catch (Exception e) {
-                    // Custom skin not found, will use default
+                    DragonSkinsClient.LOGGER.debug("Could not load custom skin for " + username + ": " + e.getMessage());
                 }
                 
                 // Return default skin
@@ -52,18 +80,13 @@ public class PlayerSkinProviderMixin {
     private String getUsername(UUID uuid) {
         // Try to get username from game session
         try {
-            var client = net.minecraft.client.MinecraftClient.getInstance();
+            var client = MinecraftClient.getInstance();
             if (client.getSession() != null) {
                 return client.getSession().getUsername();
             }
         } catch (Exception e) {
-            // Ignore
+            DragonSkinsClient.LOGGER.error("Failed to get username: " + e.getMessage());
         }
         return null;
-    }
-    
-    private Identifier loadTextureFromUrl(String url) {
-        // Create a unique identifier for this texture
-        return new Identifier("dragonskins", "skin_" + url.hashCode());
     }
 }
