@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "id": "dragonskins",
+  "version": "1.0.0",
+  "name": "Dragon Skins",
+  "description": "Custom skins for Dragon Client",
+  "authors": ["Dragon Client"],
+  "contact": {},
+  "license": "MIT",
+  "environment": "client",
+  "entrypoints": {
+    "client": [
+      "com.dragonclient.skins.DragonSkinsClient"
+    ]
+  },
+  "mixins": [
+    "dragonskins.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=0.14.0",
+    "minecraft": ">=1.16.x"
+  }
+}
