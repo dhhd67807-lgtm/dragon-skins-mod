@@ -1,13 +1,10 @@
 package com.dragonclient.skins.mixin;
 
 import com.dragonclient.skins.DragonSkinsClient;
-import com.mojang.authlib.GameProfile;
-import com.mojang.authlib.minecraft.MinecraftProfileTexture;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.AbstractClientPlayerEntity;
 import net.minecraft.util.Identifier;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
@@ -18,12 +15,11 @@ import java.net.URL;
 @Mixin(AbstractClientPlayerEntity.class)
 public abstract class AbstractClientPlayerEntityMixin {
     
-    @Shadow
-    public abstract GameProfile getGameProfile();
-    
     @Inject(method = "getSkinTexture", at = @At("HEAD"), cancellable = true)
     private void getCustomSkin(CallbackInfoReturnable<Identifier> cir) {
-        String username = getGameProfile().getName();
+        AbstractClientPlayerEntity player = (AbstractClientPlayerEntity) (Object) this;
+        String username = player.getGameProfile().getName();
+        
         if (username != null) {
             String skinUrl = DragonSkinsClient.getSkinUrl(username);
             
@@ -54,7 +50,7 @@ public abstract class AbstractClientPlayerEntityMixin {
                                         new net.minecraft.client.texture.PlayerSkinTexture(
                                             null,
                                             skinUrl,
-                                            net.minecraft.client.util.DefaultSkinHelper.getTexture(getGameProfile().getId()),
+                                            net.minecraft.client.util.DefaultSkinHelper.getTexture(player.getGameProfile().getId()),
                                             true,
                                             null
                                         )
